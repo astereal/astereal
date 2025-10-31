@@ -57,3 +57,7 @@ Available commands:
 
 Use 'php aster [command]:help' for details.
 ```
+
+## Creator and Developer
+
+`Jerome Soriano` - a very handsome asterisk developer.
