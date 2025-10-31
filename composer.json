@@ -1,0 +1,11 @@
+{
+    "name": "astereal/framework",
+    "autoload": {
+        "psr-4": {
+            "Bootstrap\\": "bootstrap/",
+            "Modules\\": "modules/",
+            "App\\": "app/"
+        }
+    },
+    "require": {}
+}
