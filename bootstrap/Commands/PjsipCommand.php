@@ -29,7 +29,7 @@ class PjsipCommand
 
             default:
                 echo "Usage:\n";
-                echo "  php aster pjsip reload   Reload the PJSIP module\n";
+                echo "  php aster pjsip:reload   Reload the PJSIP module\n";
         }
     }
 }

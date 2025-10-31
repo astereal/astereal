@@ -14,6 +14,8 @@ class QuoteCommand
         "“The best error message is the one that never shows up.” – Thomas Fuchs",
         "“First, solve the problem. Then, write the code.” – John Johnson",
         "“The ethereal way to build Asterisk applications.” – Astereal",
+        "“Do not go where the path may lead, go instead where there is no path and leave a trail.” – Ralph Waldo Emerson",
+        
     ];
 
     public function handle(array $args)

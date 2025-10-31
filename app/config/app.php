@@ -18,7 +18,7 @@
  * @category Configuration
  */
 return [
-    'name' => 'My Application',
+    'name' => 'My Astereal',
     'version' => '1.0.0',
     'debug' => true,
 ];

@@ -16,7 +16,11 @@ ASTEREAL/
 │   └─ sounds/
 │
 ├─ modules/
-│   └─ PJSIP/
+│   ├─ dialplan/
+│   │   └─ Manager.php
+|   ├─ pjsip/
+│   │   └─ Manager.php
+|   └─ publisher/
 │       └─ Manager.php
 │
 ├─ bootstrap/
@@ -26,6 +30,9 @@ ASTEREAL/
 │   ├─ AsterKernel.php
 │   ├─ autoload.php
 │   └─ bootstrap.php
+|
+├─ settings/
+│   └─ publisher.php
 │
 ├─ vendor/
 │
@@ -41,11 +48,12 @@ ASTEREAL/
 ```bash
 Astereal CLI
 Usage:
-  php aster [command]
+  php aster [command][:action]
 
 Available commands:
-  pjsip Manage the PJSIP module (reload, show, etc.)
-  quote Display a random inspirational quote
+  dialplan Manage your dialplan (reload)
+  pjsip  Manage the PJSIP module (reload, show, etc.)
+  quote  Display a random inspirational quote
 
-Use 'php aster [command]' for details.
+Use 'php aster [command]:help' for details.
 ```
