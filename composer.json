@@ -1,5 +1,5 @@
 {
-    "name": "astereal/framework",
+    "name": "astereal/astereal",
     "autoload": {
         "psr-4": {
             "Bootstrap\\": "bootstrap/",
