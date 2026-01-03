@@ -6,6 +6,13 @@
 
 ***This project is currently under development***
 
+## Installation
+
+You must install composer and PHP minimum of 8.1 version. Below is the command to create project:
+```
+composer create-project astereal/astereal your-project-name
+```
+
 ## Structure
 
 ```
@@ -55,9 +62,17 @@ Usage:
 Available commands:
   dialplan Manage your dialplan (reload)
   pjsip  Manage the PJSIP module (reload, show, etc.)
+  publish Publish application files to system paths
   quote  Display a random inspirational quote
 
 Use 'php aster [command]:help' for details.
+```
+
+## Deploying your app
+
+To deploy your application just run the command:
+```bash
+php aster publish
 ```
 
 ## Creator and Developer
