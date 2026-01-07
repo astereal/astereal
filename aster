@@ -3,7 +3,7 @@
 
 require __DIR__ . '/bootstrap/autoload.php';
 
-use Bootstrap\AsterKernel;
+use Astereal\Bootstrap\AsterKernel;
 
 $kernel = new AsterKernel();
 $kernel->handle($argv);

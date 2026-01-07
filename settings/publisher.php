@@ -27,4 +27,20 @@ return [
     'config'    => '/etc/astereal/',
     'dialplan'  => '/etc/asterisk/',
     'sounds'    => '/var/lib/asterisk/sounds/',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Asterisk Reload Commands
+    |--------------------------------------------------------------------------
+    |
+    | These commands are executed AFTER publishing completes.
+    | All commands listed here must be call-safe.
+    |
+    */
+    'reload' => [
+        'dialplan reload',
+        'pjsip reload',
+        'confbridge reload',
+        'features reload',
+    ],
 ];

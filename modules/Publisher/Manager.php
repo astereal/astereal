@@ -21,6 +21,7 @@ class Manager
         $this->assertUnix();
         
         if (!file_exists($this->configPath)) {
+            echo "❌ Publisher config not found.\n";
             return [
                 'error' => [
                     'success' => false,
@@ -29,13 +30,18 @@ class Manager
             ];
         }
 
-        $paths = require $this->configPath;
+        $config = require $this->configPath;
+        $paths  = $config['paths'] ?? [];
         $results = [];
+
+        echo "\n📦 Publishing application files...\n";
 
         foreach ($paths as $key => $destination) {
             $source = "{$this->appPath}/{$key}";
+            echo "➡️  Publishing {$key} → {$destination} ... ";
 
             if (!is_dir($source)) {
+                echo "❌ Source directory not found.\n";
                 $results[$key] = [
                     'success' => false,
                     'error' => "Source directory not found: {$source}",
@@ -45,18 +51,60 @@ class Manager
 
             try {
                 $this->copyDirectory($source, $destination);
+                echo "✅ Done.\n";
 
                 $results[$key] = [
                     'success' => true,
                     'destination' => $destination,
                 ];
             } catch (\Throwable $e) {
+                echo "❌ Failed: {$e->getMessage()}\n";
                 $results[$key] = [
                     'success' => false,
                     'error' => $e->getMessage(),
                 ];
             }
         }
+
+        // 🔁 Reload Asterisk (if configured)
+        if (!empty($config['reload'])) {
+            $results['reload'] = $this->reloadAsterisk($config['reload']);
+        }
+
+        echo "\n✔ Publish process completed.\n";
+
+        return $results;
+    }
+
+    /**
+     * Reload asterisk modules such as dialplan.
+     */
+    protected function reloadAsterisk(array $commands): array
+    {
+        $results = [];
+
+        echo "\n🔁 Reloading Asterisk subsystems...\n";
+
+        foreach ($commands as $command) {
+            echo "➡️  Running: {$command} ... ";
+
+            $cmd = 'asterisk -rx ' . escapeshellarg($command);
+            exec($cmd, $output, $exitCode);
+
+            if ($exitCode === 0) {
+                echo "✅ OK\n";
+            } else {
+                echo "❌ FAILED\n";
+            }
+
+            $results[] = [
+                'command' => $command,
+                'success' => $exitCode === 0,
+                'output'  => $output,
+            ];
+        }
+
+        echo "✔ Reload process completed.\n\n";
 
         return $results;
     }

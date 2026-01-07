@@ -5,6 +5,8 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
+            "Bootstrap\\": "bootstrap/",
+            "Modules\\": "modules/",
             "Astereal\\Bootstrap\\": "bootstrap/",
             "Astereal\\Modules\\": "modules/"
         }
