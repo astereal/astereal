@@ -35,8 +35,19 @@ class Manager
         $config = require $this->configPath;
 
         // Support both structured ['paths' => [...], 'reloads' => [...]] and legacy flat array
-        $paths = $config['paths'] ?? (isset($config['reloads']) ? [] : $config);
+        $paths = $config['paths'] ?? (isset($config['reloads']) || isset($config['reload']) ? [] : $config);
         $reloadsConfig = $config['reloads'] ?? [];
+
+        // Support flat 'reload' array if provided
+        if (empty($reloadsConfig) && !empty($config['reload'])) {
+            foreach ($config['reload'] as $idx => $cmd) {
+                $reloadsConfig['cmd_' . $idx] = [
+                    'enabled' => true,
+                    'command' => $cmd,
+                    'label'   => ucfirst($cmd),
+                ];
+            }
+        }
 
         $fileResults = [];
 
@@ -246,5 +257,4 @@ class Manager
             );
         }
     }
-
 }

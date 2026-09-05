@@ -12,14 +12,14 @@ class PublisherCommand
 
     public function handle(array $args): void
     {
-        echo "📦 Publishing application files...\n\n";
+        echo "📦 Started publishing files...\n\n";
 
         try {
             $manager = new Manager();
             $results = $manager->publish();
 
-            $files = $results['files'] ?? [];
-            $reloads = $results['reloads'] ?? [];
+            $files   = $results['files'] ?? ($results['publish'] ?? []);
+            $reloads = $results['reloads'] ?? ($results['reload'] ?? []);
 
             // Fallback for legacy flat array
             if (empty($files) && empty($reloads) && !empty($results)) {
@@ -28,14 +28,15 @@ class PublisherCommand
 
             $hasFailures = false;
             $green = "\033[32m";
-            $red = "\033[31m";
+            $red   = "\033[31m";
             $reset = "\033[0m";
 
             // 1. Published Files
             foreach ($files as $key => $result) {
                 if (is_array($result)) {
                     if (!empty($result['success'])) {
-                        echo "  {$green}✅ Published [{$key}]{$reset} -> {$result['destination']}\n";
+                        $destination = $result['destination'] ?? '';
+                        echo "  {$green}✅ Published [{$key}]{$reset}" . ($destination ? " -> {$destination}" : '') . "\n";
                     } else {
                         $hasFailures = true;
                         $err = $result['error'] ?? 'Unknown error';
@@ -60,8 +61,8 @@ class PublisherCommand
                         continue;
                     }
 
-                    $label = $reload['label'] ?? ucfirst($key);
-                    $cmd = $reload['command'] ?? '';
+                    $label = $reload['label'] ?? (is_string($key) ? ucfirst($key) : ($reload['command'] ?? 'Reload'));
+                    $cmd   = $reload['command'] ?? '';
                     if (!empty($reload['success'])) {
                         echo "  {$green}✅ Reloaded {$label}{$reset} ({$cmd})\n";
                     } else {
@@ -81,7 +82,7 @@ class PublisherCommand
         } catch (RuntimeException $e) {
             $this->error($e->getMessage());
         } catch (\Throwable $e) {
-            $this->error("Unexpected error: {$e->getMessage()} (in {$e->getFile()}:{$e->getLine()})");
+            $this->error("Unexpected error occurred: {$e->getMessage()} (in {$e->getFile()}:{$e->getLine()})");
         }
     }
 
