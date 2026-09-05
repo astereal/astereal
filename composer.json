@@ -8,10 +8,16 @@
             "Bootstrap\\": "bootstrap/",
             "Modules\\": "modules/",
             "Astereal\\Bootstrap\\": "bootstrap/",
-            "Astereal\\Modules\\": "modules/"
+            "Astereal\\Modules\\": "modules/",
+            "Astereal\\Web\\": "web/app/"
         },
         "classmap": [
             "modules/"
+        ]
+    },
+    "scripts": {
+        "post-create-project-cmd": [
+            "@php aster auth:setup"
         ]
     },
     "require": {

@@ -145,15 +145,73 @@ Before creating the daily log file, loggers must check if the Year-Month folder 
 
 ---
 
-## 5. Astereal CLI (`php aster`)
+## 5. Astereal Web & REST API Architecture
 
-- `php aster publish` - Publishes framework configs to Asterisk system paths (`/etc/asterisk/`, `/var/lib/asterisk/agi-bin/`). Automatically detects if Asterisk is stopped and starts it before reloading enabled modules (`dialplan`, `pjsip`).
+### 5.1 Technology Stack
+- **Backend Core**: Pure Native PHP 8.1+ (PSR-4 autoloading, PSR-12 coding standards, clean separation of concerns). Zero bloated dependencies.
+- **Web Server**: Apache HTTPD (Rocky Linux/RHEL standard: DocumentRoot `/var/www/html/astereal/web/public`, vhost in `/etc/httpd/conf.d/`).
+- **Styling**: TailwindCSS (utility-first, modern responsive UI, dark-mode first).
+- **Frontend Interactivity**:
+  - **Alpine.js**: Declarative UI reactivity (modals, dropdowns, tab switching, live state).
+  - **jQuery**: Asynchronous AJAX communication, event handling, and real-time polling of Asterisk channel states.
+
+### 5.2 Directory & Publishing Hierarchy
+To keep sensitive application files safe from browser access, only `public/` is exposed as the webroot:
+
+```text
+ASTEREAL/
+├── app/                              <- Asterisk Telephony Modules (Published via `php aster publish`)
+│   ├── httpd/
+│   │   └── astereal.conf             -> Published to: /etc/httpd/conf.d/astereal.conf
+│   ├── agi/                          -> Published to: /var/lib/asterisk/agi-bin/
+│   ├── dialplan/                     -> Published to: /etc/asterisk/
+│   ├── sip/                          -> Published to: /etc/asterisk/
+│   └── sounds/                       -> Published to: /var/lib/asterisk/sounds/
+│
+├── web/                              <- Web & REST API Application (Hosted in place by Apache)
+│   ├── public/                       <- Apache DocumentRoot (/var/www/html/astereal/web/public)
+│   │   ├── index.php                 <- Front Controller & Routing Entry
+│   │   └── .htaccess                 <- Mod_rewrite rules (redirect all to index.php)
+│   ├── app/                          <- Backend Application (Protected from web)
+│   │   ├── Controllers/              <- Web & Api Controllers
+│   │   ├── Models/                   <- Native PDO Models (Prepared statements)
+│   │   └── Middleware/               <- HMAC Signature & IP Whitelist validation
+│   ├── config/                       <- Database & Security Configuration
+│   ├── routes/                       <- api.php (AGI endpoints) & web.php (UI routes)
+│   └── views/                        <- Server-rendered HTML templates (Tailwind + Alpine)
+```
+
+### 5.3 Publishing Standard (`settings/publisher.php`)
+- **Asterisk Telephony**: `agi`, `dialplan`, `sip`, `sounds` -> `/etc/asterisk/`, `/var/lib/asterisk/agi-bin/`
+- **Apache VHost Config**: `app/httpd/` -> `/etc/httpd/conf.d/`
+- **Web Application**: Stays in `web/` at the repository root. Not copied during publish. Apache's VirtualHost in `/etc/httpd/conf.d/astereal.conf` points directly to `DocumentRoot /var/www/html/astereal/web/public`.
+
+### 5.4 Security Standard (AGI $\rightarrow$ API $\rightarrow$ Database)
+1. **HMAC-SHA256 Cryptographic Signing**:
+   - Every AGI request includes `X-Astereal-Timestamp` and `X-Astereal-Signature`.
+   - Requests with timestamp skew > 30 seconds are rejected (replay protection).
+   - Signatures are verified against the shared `API_SECRET`.
+2. **Network Isolation**:
+   - Apache API endpoints bind to `127.0.0.1` by default or validate Asterisk IP in `IpWhitelistMiddleware`.
+3. **Database Security**:
+   - 100% PDO prepared statements with parameter binding.
+
+---
+
+## 6. Astereal CLI (`php aster`)
+
+- `php aster publish` - Publishes framework configs to Asterisk and Apache system paths (`/etc/asterisk/`, `/var/lib/asterisk/agi-bin/`, `/etc/httpd/conf.d/`, `/var/www/html/astereal/`). Automatically detects if Asterisk is stopped and starts it before reloading enabled modules (`dialplan`, `pjsip`).
 - `php aster core:status` - Checks if Asterisk daemon is active and responsive.
 - `php aster core:start` - Starts Asterisk daemon via `systemctl`, `service`, or binary fallback.
 - `php aster core:stop` - Gracefully stops Asterisk.
 - `php aster core:restart` - Restarts Asterisk daemon.
 - `php aster dialplan:reload` - Standalone reload of Asterisk dialplan (`asterisk -rx "dialplan reload"`).
 - `php aster pjsip:reload` - Standalone reload of PJSIP endpoints and configuration.
+- `php aster auth:setup` - Provisions the initial admin account with a random secure password (triggered automatically on `composer create-project`).
+- `php aster auth:reset [password]` - Generates a new random secure password (or custom password) and outputs the credentials banner.
+- `php aster auth:credentials` - Lists all provisioned users and roles.
+- `php aster auth:create <username> [password]` - Creates an additional user account from the terminal.
 - Future commands: `make:agi`, `make:dialplan`, `test:agi`.
+
 
 

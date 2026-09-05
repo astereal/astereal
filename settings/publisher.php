@@ -28,6 +28,7 @@ return [
         'dialplan'  => '/etc/asterisk/',
         'sip'       => '/etc/asterisk/',
         'sounds'    => '/var/lib/asterisk/sounds/',
+        'httpd'     => '/etc/httpd/conf.d/',
     ],
 
     /*

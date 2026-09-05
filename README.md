@@ -78,4 +78,4 @@ php aster publish
 
 ## Creator and Developer
 
-`Jerome Soriano` - a very handsome asterisk developer.
+`Jerome Soriano` - an asterisk developer.

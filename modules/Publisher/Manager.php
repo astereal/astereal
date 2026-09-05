@@ -4,13 +4,15 @@ namespace Modules\Publisher;
 
 class Manager
 {
+    protected string $basePath;
     protected string $configPath;
     protected string $appPath;
 
     public function __construct()
     {
-        $this->configPath = __DIR__ . '/../../settings/publisher.php';
-        $this->appPath    = __DIR__ . '/../../app';
+        $this->basePath   = dirname(__DIR__, 2);
+        $this->configPath = $this->basePath . '/settings/publisher.php';
+        $this->appPath    = $this->basePath . '/app';
     }
 
     /**
@@ -53,11 +55,26 @@ class Manager
 
         foreach ($paths as $key => $destination) {
             $source = "{$this->appPath}/{$key}";
+            if (!is_dir($source) && is_dir("{$this->basePath}/{$key}")) {
+                $source = "{$this->basePath}/{$key}";
+            }
 
             if (!is_dir($source)) {
                 $fileResults[$key] = [
                     'success' => false,
                     'error' => "Source directory not found: {$source}",
+                ];
+                continue;
+            }
+
+            // If destination is the base path itself and source is inside base path,
+            // the files are already in place, so skip copying to avoid self-overwrite
+            $realDest = realpath($destination);
+            $realBase = realpath($this->basePath);
+            if ($realDest && $realBase && $realDest === $realBase) {
+                $fileResults[$key] = [
+                    'success'     => true,
+                    'destination' => $destination . ' (already in place)',
                 ];
                 continue;
             }
