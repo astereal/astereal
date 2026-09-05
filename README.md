@@ -22,6 +22,7 @@ ASTEREAL/
 │   ├─ agi/
 │   ├─ config/
 │   ├─ dialplan/
+│   ├─ sip/
 │   └─ sounds/
 │
 ├─ modules/

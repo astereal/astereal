@@ -18,36 +18,73 @@ class PublisherCommand
             $manager = new Manager();
             $results = $manager->publish();
 
-            // ✅ Display publish results
-            if (!empty($results['publish'])) {
-                foreach ($results['publish'] as $key => $status) {
-                    if ($status['success']) {
-                        echo "✅ {$key} published successfully.\n";
+            $files   = $results['files'] ?? ($results['publish'] ?? []);
+            $reloads = $results['reloads'] ?? ($results['reload'] ?? []);
+
+            // Fallback for legacy flat array
+            if (empty($files) && empty($reloads) && !empty($results)) {
+                $files = $results;
+            }
+
+            $hasFailures = false;
+            $green = "\033[32m";
+            $red   = "\033[31m";
+            $reset = "\033[0m";
+
+            // 1. Published Files
+            foreach ($files as $key => $result) {
+                if (is_array($result)) {
+                    if (!empty($result['success'])) {
+                        $destination = $result['destination'] ?? '';
+                        echo "  {$green}✅ Published [{$key}]{$reset}" . ($destination ? " -> {$destination}" : '') . "\n";
                     } else {
-                        echo "❌ {$key} failed: {$status['error']}\n";
+                        $hasFailures = true;
+                        $err = $result['error'] ?? 'Unknown error';
+                        echo "  {$red}❌ Failed [{$key}]{$reset}: {$err}\n";
+                    }
+                } else {
+                    echo "  " . $result . "\n";
+                }
+            }
+
+            // 2. Asterisk Module Reloads
+            if (!empty($reloads)) {
+                echo "\n🔄 Reloading Asterisk modules...\n\n";
+                foreach ($reloads as $key => $reload) {
+                    if ($key === '_service') {
+                        if (!empty($reload['success'])) {
+                            echo "  {$green}⚡ {$reload['message']}{$reset}\n";
+                        } else {
+                            $hasFailures = true;
+                            echo "  {$red}❌ {$reload['error']}{$reset}\n";
+                        }
+                        continue;
+                    }
+
+                    $label = $reload['label'] ?? (is_string($key) ? ucfirst($key) : ($reload['command'] ?? 'Reload'));
+                    $cmd   = $reload['command'] ?? '';
+                    if (!empty($reload['success'])) {
+                        echo "  {$green}✅ Reloaded {$label}{$reset} ({$cmd})\n";
+                    } else {
+                        $hasFailures = true;
+                        $err = $reload['error'] ?? 'Failed';
+                        echo "  {$red}❌ Failed to reload {$label}{$reset} ({$cmd}): {$err}\n";
                     }
                 }
             }
 
-            // 🔁 Display reload results
-            if (!empty($results['reload'])) {
-                echo "\n🔁 Reload results:\n";
-                foreach ($results['reload'] as $reload) {
-                    $symbol = $reload['success'] ? '✅' : '❌';
-                    echo " {$symbol} {$reload['command']}\n";
-                }
+            if ($hasFailures) {
+                echo "\n⚠️ Publish completed with errors.\n";
+            } else {
+                echo "\n✨ Publish process completed successfully.\n";
             }
-
-            echo "\n✨ Publish process completed.\n";
 
         } catch (RuntimeException $e) {
             $this->error($e->getMessage());
         } catch (\Throwable $e) {
-            // last-resort safety net with more info
-            $this->error("Unexpected error occurred: " . $e->getMessage());
+            $this->error("Unexpected error occurred: {$e->getMessage()} (in {$e->getFile()}:{$e->getLine()})");
         }
     }
-
 
     protected function error(string $message): void
     {

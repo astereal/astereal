@@ -4,8 +4,8 @@
  * Publisher Configuration File
  *
  * This file contains configuration settings specific to the Publisher module.
- * It defines various parameters that control how application files are published
- * to their respective Asterisk directories.
+ * It defines where application files are published to Asterisk directories,
+ * and which Asterisk modules should be reloaded after publishing.
  *
  * @package Astereal
  * @category Configuration
@@ -22,25 +22,48 @@ return [
     | are the destination directories on your Asterisk system.
     |
     */
-
-    'agi'       => '/var/lib/asterisk/agi-bin/',
-    'config'    => '/etc/astereal/',
-    'dialplan'  => '/etc/asterisk/',
-    'sounds'    => '/var/lib/asterisk/sounds/',
+    'paths' => [
+        'agi'       => '/var/lib/asterisk/agi-bin/',
+        'config'    => '/etc/astereal/',
+        'dialplan'  => '/etc/asterisk/',
+        'sip'       => '/etc/asterisk/',
+        'sounds'    => '/var/lib/asterisk/sounds/',
+    ],
 
     /*
     |--------------------------------------------------------------------------
-    | Asterisk Reload Commands
+    | Post-Publish Asterisk Module Reloads
     |--------------------------------------------------------------------------
     |
-    | These commands are executed AFTER publishing completes.
-    | All commands listed here must be call-safe.
+    | Configure which Asterisk modules to reload automatically after publishing.
+    | - 'enabled': whether this module reloads on publish (true/false)
+    | - 'command': the Asterisk CLI command executed via `asterisk -rx "<command>"`
+    | - 'label': friendly display name
+    |
+    | If Asterisk is stopped, 'auto_start_asterisk' will automatically attempt
+    | to start Asterisk so that reloads can proceed.
     |
     */
-    'reload' => [
-        'dialplan reload',
-        'pjsip reload',
-        'confbridge reload',
-        'features reload',
+    'auto_start_asterisk' => true,
+
+    'reloads' => [
+        'dialplan' => [
+            'enabled' => true,
+            'command' => 'dialplan reload',
+            'label'   => 'Dialplan',
+        ],
+        'pjsip' => [
+            'enabled' => true,
+            'command' => 'pjsip reload',
+            'label'   => 'PJSIP',
+        ],
+        /**
+         * Other modules to reload
+         */
+        'logger' => [
+            'enabled' => false,
+            'command' => 'logger reload',
+            'label'   => 'Asterisk Logger',
+        ],
     ],
 ];

@@ -9,7 +9,10 @@
             "Modules\\": "modules/",
             "Astereal\\Bootstrap\\": "bootstrap/",
             "Astereal\\Modules\\": "modules/"
-        }
+        },
+        "classmap": [
+            "modules/"
+        ]
     },
     "require": {
         "php": "^8.1"
