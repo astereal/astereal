@@ -3,3 +3,4 @@ vendor/
 *.sqlite3
 logs/
 .env
+app/sip/pjsip.conf

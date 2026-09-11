@@ -80,16 +80,22 @@ class Manager
             }
 
             try {
+                $note = null;
+                if ($key === 'sip') {
+                    $note = $this->prepareSipFiles($source, $destination);
+                }
+
                 $this->copyDirectory($source, $destination);
 
                 $fileResults[$key] = [
-                    'success' => true,
+                    'success'     => true,
                     'destination' => $destination,
+                    'note'        => $note,
                 ];
             } catch (\Throwable $e) {
                 $fileResults[$key] = [
                     'success' => false,
-                    'error' => $e->getMessage(),
+                    'error'   => $e->getMessage(),
                 ];
             }
         }
@@ -264,6 +270,54 @@ class Manager
                 }
             }
         }
+    }
+
+    /**
+     * Handle SIP file initialization and first-time Asterisk system backup
+     */
+    protected function prepareSipFiles(string $source, string $destination): ?string
+    {
+        $localExample = rtrim($source, '/\\') . '/pjsip.example.conf';
+        $localConf    = rtrim($source, '/\\') . '/pjsip.conf';
+
+        // 1. If app/sip/pjsip.conf does not exist locally, initialize it from pjsip.example.conf
+        if (!file_exists($localConf) && file_exists($localExample)) {
+            @copy($localExample, $localConf);
+        }
+
+        // 2. Check if destination /etc/asterisk/pjsip.conf exists on fresh install
+        $targetConf  = rtrim($destination, '/\\') . '/pjsip.conf';
+        $markerDir   = '/etc/astereal';
+        $markerFile  = "{$markerDir}/.pjsip_initialized";
+
+        if (file_exists($targetConf) && !file_exists($markerFile)) {
+            // First time publish on a fresh Linux install with default Asterisk pjsip.conf
+            $backupFile = rtrim($destination, '/\\') . '/pjsip.conf.original';
+            if (!file_exists($backupFile)) {
+                @copy($targetConf, $backupFile);
+            }
+
+            if (!is_dir($markerDir)) {
+                @mkdir($markerDir, 0755, true);
+            }
+            @file_put_contents($markerFile, json_encode([
+                'initialized_at' => date('Y-m-d H:i:s'),
+                'backed_up_to'   => $backupFile,
+                'source'         => $localConf,
+            ], JSON_PRETTY_PRINT));
+
+            return "Backed up original {$targetConf} -> pjsip.conf.original";
+        } elseif (!file_exists($markerFile)) {
+            if (!is_dir($markerDir)) {
+                @mkdir($markerDir, 0755, true);
+            }
+            @file_put_contents($markerFile, json_encode([
+                'initialized_at' => date('Y-m-d H:i:s'),
+                'fresh_install'  => true,
+            ], JSON_PRETTY_PRINT));
+        }
+
+        return null;
     }
 
     protected function assertUnix(): void

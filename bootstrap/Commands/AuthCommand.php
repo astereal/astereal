@@ -54,6 +54,8 @@ class AuthCommand
      */
     protected function setup(): void
     {
+        $this->ensureSipConfig();
+
         $db = $this->getPdo();
         if (!$db) {
             return;
@@ -81,6 +83,24 @@ class AuthCommand
         $stmt->execute([':password' => $hash]);
 
         $this->displayCredentialsBanner('admin', $password, true);
+    }
+
+    /**
+     * Initialize app/sip/pjsip.conf from pjsip.example.conf if missing
+     */
+    protected function ensureSipConfig(): void
+    {
+        $sipDir = $this->basePath . '/app/sip';
+        $example = $sipDir . '/pjsip.example.conf';
+        $conf = $sipDir . '/pjsip.conf';
+
+        if (file_exists($example) && !file_exists($conf)) {
+            if (@copy($example, $conf)) {
+                $green = "\033[32m";
+                $reset = "\033[0m";
+                echo "  {$green}✅ Initialized app/sip/pjsip.conf from pjsip.example.conf{$reset}\n\n";
+            }
+        }
     }
 
     /**

@@ -37,6 +37,10 @@ class PublisherCommand
                     if (!empty($result['success'])) {
                         $destination = $result['destination'] ?? '';
                         echo "  {$green}✅ Published [{$key}]{$reset}" . ($destination ? " -> {$destination}" : '') . "\n";
+                        if (!empty($result['note'])) {
+                            $cyan = "\033[36m";
+                            echo "     {$cyan}ℹ️ {$result['note']}{$reset}\n";
+                        }
                     } else {
                         $hasFailures = true;
                         $err = $result['error'] ?? 'Unknown error';
