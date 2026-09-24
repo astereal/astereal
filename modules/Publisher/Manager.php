@@ -54,9 +54,18 @@ class Manager
         $fileResults = [];
 
         foreach ($paths as $key => $destination) {
-            $source = "{$this->appPath}/{$key}";
-            if (!is_dir($source) && is_dir("{$this->basePath}/{$key}")) {
-                $source = "{$this->basePath}/{$key}";
+            $cleanKey = trim((string)$key, " ./\\");
+            if ($cleanKey === '') {
+                $fileResults[$key] = [
+                    'success' => false,
+                    'error'   => 'Invalid publisher path key. Root project directory cannot be published.',
+                ];
+                continue;
+            }
+
+            $source = "{$this->appPath}/{$cleanKey}";
+            if (!is_dir($source) && is_dir("{$this->basePath}/{$cleanKey}")) {
+                $source = "{$this->basePath}/{$cleanKey}";
             }
 
             if (!is_dir($source)) {
@@ -67,14 +76,34 @@ class Manager
                 continue;
             }
 
-            // If destination is the base path itself and source is inside base path,
+            // Ensure source is never the project root itself
+            $realSource = realpath($source);
+            $realBase   = realpath($this->basePath);
+            if ($realSource && $realBase && $realSource === $realBase) {
+                $fileResults[$key] = [
+                    'success' => false,
+                    'error'   => 'Security violation: publisher cannot publish the root project directory.',
+                ];
+                continue;
+            }
+
+            // If destination is the project root itself or matches source path,
             // the files are already in place, so skip copying to avoid self-overwrite
-            $realDest = realpath($destination);
-            $realBase = realpath($this->basePath);
-            if ($realDest && $realBase && $realDest === $realBase) {
+            $normDest   = rtrim(str_replace('\\', '/', (string)$destination), '/');
+            $normBase   = rtrim(str_replace('\\', '/', (string)$this->basePath), '/');
+            $normSource = rtrim(str_replace('\\', '/', (string)$source), '/');
+
+            $realDest   = realpath($destination) ?: $normDest;
+            $realBase   = realpath($this->basePath) ?: $normBase;
+            $realSource = realpath($source) ?: $normSource;
+
+            if ($normDest === $normBase || $normDest === $normSource ||
+                $realDest === $realBase || $realDest === $realSource ||
+                ($normDest !== '' && str_starts_with($normBase, $normDest)) ||
+                ($realDest !== '' && str_starts_with($realBase, $realDest))) {
                 $fileResults[$key] = [
                     'success'     => true,
-                    'destination' => $destination . ' (already in place)',
+                    'destination' => $destination . ' (already in place in project)',
                 ];
                 continue;
             }
@@ -86,6 +115,11 @@ class Manager
                 }
 
                 $this->copyDirectory($source, $destination);
+
+                if ($key === 'web') {
+                    $webNote = $this->prepareWebFiles($destination);
+                    $note = $note ? "{$note}; {$webNote}" : $webNote;
+                }
 
                 $fileResults[$key] = [
                     'success'     => true,
@@ -318,6 +352,70 @@ class Manager
         }
 
         return null;
+    }
+
+    /**
+     * Post-processing for web directory publishing
+     * Ensures proper permissions on SQLite and .env files within the published web directory,
+     * and strips out any accidental root framework files.
+     */
+    protected function prepareWebFiles(string $destination): ?string
+    {
+        $notes = [];
+
+        // 1. Remove any accidental root framework files/folders if present in published web directory
+        $rootPollutants = [
+            '.git', '.agents', 'bootstrap', 'docs', 'modules', 'scratch',
+            'settings', 'vendor', 'web', 'aster', 'composer.json',
+            'composer.lock', 'README.md', '.gitignore'
+        ];
+        foreach ($rootPollutants as $pollutant) {
+            $pollutantPath = rtrim($destination, '/\\') . '/' . $pollutant;
+            if (file_exists($pollutantPath) || is_dir($pollutantPath)) {
+                $this->deletePath($pollutantPath);
+                $notes[] = "cleaned {$pollutant}";
+            }
+        }
+
+        // 2. Ensure .env in published directory has proper read permissions
+        $destEnv = rtrim($destination, '/\\') . '/.env';
+        if (file_exists($destEnv)) {
+            @chmod($destEnv, 0640);
+        }
+
+        // 3. Ensure SQLite database directory & file permissions for web server (apache/www-data)
+        $dbDir = rtrim($destination, '/\\') . '/database';
+        $dbFile = "{$dbDir}/astereal.sqlite";
+        if (is_dir($dbDir)) {
+            @chmod($dbDir, 0777);
+        }
+        if (file_exists($dbFile)) {
+            @chmod($dbFile, 0666);
+            $notes[] = 'SQLite permissions configured (0666)';
+        }
+
+        return !empty($notes) ? implode(', ', $notes) : null;
+    }
+
+    /**
+     * Recursively delete a file or directory
+     */
+    protected function deletePath(string $path): void
+    {
+        if (is_dir($path) && !is_link($path)) {
+            $items = scandir($path);
+            if ($items !== false) {
+                foreach ($items as $item) {
+                    if ($item === '.' || $item === '..') {
+                        continue;
+                    }
+                    $this->deletePath($path . '/' . $item);
+                }
+            }
+            @rmdir($path);
+        } elseif (file_exists($path) || is_link($path)) {
+            @unlink($path);
+        }
     }
 
     protected function assertUnix(): void

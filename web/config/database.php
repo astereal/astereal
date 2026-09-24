@@ -19,6 +19,8 @@ return [
 
     'sqlite' => [
         // Useful for rapid local testing without setting up MariaDB
-        'database' => __DIR__ . '/../database/astereal.sqlite',
+        'database' => (getenv('DB_DATABASE') && str_ends_with((string)getenv('DB_DATABASE'), '.sqlite'))
+            ? (string)getenv('DB_DATABASE')
+            : __DIR__ . '/../database/astereal.sqlite',
     ],
 ];

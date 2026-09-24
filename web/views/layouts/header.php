@@ -7,7 +7,7 @@ $currentUser = Auth::user();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($title ?? 'Astereal Telephony Hub') ?></title>
+    <title><?= htmlspecialchars($title ?? ((getenv('APP_NAME') ?: 'Astereal') . ' Telephony Hub')) ?></title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -68,8 +68,8 @@ $currentUser = Auth::user();
                 <a href="/" class="flex items-center gap-2.5 group">
                     <img src="/assets/images/logo.png" alt="Astereal" class="w-8 h-8 sm:w-9 sm:h-9 object-contain neon-glow-logo-sm transform group-hover:scale-110 transition duration-300">
                     <div class="flex items-center">
-                        <span class="font-extrabold text-base sm:text-lg tracking-tight text-white group-hover:text-[#00f5a0] transition">ASTEREAL</span>
-                        <span class="hidden sm:inline-block text-[10px] ml-2 px-2 py-0.5 rounded-full bg-[#00f5a0]/10 text-[#00f5a0] border border-[#00f5a0]/30 font-mono font-semibold uppercase tracking-wider">v1.0 Core</span>
+                        <span class="font-extrabold text-base sm:text-lg tracking-tight text-white group-hover:text-[#00f5a0] transition"><?= htmlspecialchars(strtoupper(getenv('APP_NAME') ?: 'ASTEREAL')) ?></span>
+                        <span class="hidden sm:inline-block text-[10px] ml-2 px-2 py-0.5 rounded-full bg-[#00f5a0]/10 text-[#00f5a0] border border-[#00f5a0]/30 font-mono font-semibold uppercase tracking-wider"><?= htmlspecialchars(getenv('APP_VER') ?: 'v1.0.0 Core') ?></span>
                     </div>
                 </a>
             </div>
@@ -94,12 +94,12 @@ $currentUser = Auth::user();
                 <!-- Current User Badge & Logout -->
                 <?php if ($currentUser): ?>
                     <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#00f5a0]/5 border border-[#00f5a0]/20">
-                            <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-[#00f5a0] to-[#00d9f5] flex items-center justify-center font-bold text-slate-950 text-xs shadow-sm">
+                        <a href="/profile" title="View Admin Profile" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#00f5a0]/5 hover:bg-[#00f5a0]/15 border border-[#00f5a0]/20 hover:border-[#00f5a0]/40 transition group cursor-pointer shadow-sm">
+                            <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-[#00f5a0] to-[#00d9f5] flex items-center justify-center font-bold text-slate-950 text-xs shadow-sm group-hover:scale-110 transition">
                                 <?= strtoupper(substr($currentUser['username'] ?? 'A', 0, 1)) ?>
                             </div>
-                            <span class="text-xs font-semibold text-slate-200"><?= htmlspecialchars($currentUser['username'] ?? 'Admin') ?></span>
-                        </div>
+                            <span class="text-xs font-semibold text-slate-200 group-hover:text-white transition"><?= htmlspecialchars($currentUser['username'] ?? 'Admin') ?></span>
+                        </a>
 
                         <a href="/logout" title="Sign Out" class="text-slate-400 hover:text-rose-400 px-2.5 py-1.5 rounded-lg hover:bg-rose-500/10 transition duration-200 flex items-center gap-1.5 text-xs font-medium border border-transparent hover:border-rose-500/20">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -137,7 +137,7 @@ $currentUser = Auth::user();
             
             <!-- User Status Header on Mobile -->
             <?php if ($currentUser): ?>
-                <div class="flex items-center justify-between p-3 rounded-xl bg-[#050811] border border-slate-800">
+                <a href="/profile" class="flex items-center justify-between p-3 rounded-xl bg-[#050811] hover:bg-[#080d1a] border border-slate-800 transition block">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00f5a0] to-[#00d9f5] flex items-center justify-center font-bold text-slate-950 text-xs shadow-neon-mint">
                             <?= strtoupper(substr($currentUser['username'] ?? 'A', 0, 1)) ?>
@@ -147,8 +147,8 @@ $currentUser = Auth::user();
                             <div class="text-[10px] text-slate-400 font-mono">Role: <?= htmlspecialchars($currentUser['role'] ?? 'Administrator') ?></div>
                         </div>
                     </div>
-                    <span class="text-[10px] px-2 py-0.5 rounded bg-[#00f5a0]/10 text-[#00f5a0] border border-[#00f5a0]/30 font-mono">Logged In</span>
-                </div>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-[#00f5a0]/10 text-[#00f5a0] border border-[#00f5a0]/30 font-mono">Profile &rarr;</span>
+                </a>
             <?php endif; ?>
 
             <!-- Navigation Links -->

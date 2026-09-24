@@ -4,3 +4,4 @@ vendor/
 logs/
 .env
 app/sip/pjsip.conf
+scratch/

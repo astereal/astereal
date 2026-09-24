@@ -16,5 +16,13 @@ class WebAuthMiddleware
             // Unauthenticated: redirect to login page
             Response::redirect('/login');
         }
+
+        // If user is required to set initial password, enforce redirect to /password/change
+        if (Auth::mustChangePassword()) {
+            $path = $request->path();
+            if ($path !== '/password/change' && $path !== '/logout') {
+                Response::redirect('/password/change');
+            }
+        }
     }
 }

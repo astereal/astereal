@@ -29,6 +29,7 @@ return [
         'sip'       => '/etc/asterisk/',
         'sounds'    => '/var/lib/asterisk/sounds/',
         'httpd'     => '/etc/httpd/conf.d/',
+        'web'       => '/var/www/html/' . (getenv('APP_SLUG') ?: (getenv('APP_NAME') ? strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', str_replace(' ', '-', (string)getenv('APP_NAME')))) : basename(dirname(__DIR__)))),
     ],
 
     /*

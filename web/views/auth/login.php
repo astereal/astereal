@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login &bull; Astereal Telephony Hub</title>
+    <title>Login &bull; <?= htmlspecialchars(getenv('APP_NAME') ?: 'Astereal') ?> Telephony Hub</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -68,8 +68,8 @@
                     <img src="/assets/images/logo.png" alt="Astereal Logo" class="w-24 h-24 object-contain neon-glow-logo transform hover:scale-105 transition duration-300">
                 </div>
                 <h1 class="text-2xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
-                    <span>ASTEREAL</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-[#00f5a0]/15 text-[#00f5a0] border border-[#00f5a0]/30 font-mono tracking-normal font-semibold">CORE</span>
+                    <span><?= htmlspecialchars(strtoupper(getenv('APP_NAME') ?: 'ASTEREAL')) ?></span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-[#00f5a0]/15 text-[#00f5a0] border border-[#00f5a0]/30 font-mono tracking-normal font-semibold"><?= htmlspecialchars(getenv('APP_VER') ?: 'CORE') ?></span>
                 </h1>
                 <p class="text-xs text-slate-400 mt-1.5 font-medium">Secured Asterisk Telephony Control Hub</p>
             </div>

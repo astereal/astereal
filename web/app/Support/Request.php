@@ -66,6 +66,22 @@ class Request
         return $default;
     }
 
+    public function query(?string $key = null, mixed $default = null): mixed
+    {
+        if ($key === null) {
+            return $this->query;
+        }
+        return $this->query[$key] ?? $default;
+    }
+
+    public function post(?string $key = null, mixed $default = null): mixed
+    {
+        if ($key === null) {
+            return $this->post;
+        }
+        return $this->post[$key] ?? $default;
+    }
+
     public function all(): array
     {
         if ($this->json !== null) {

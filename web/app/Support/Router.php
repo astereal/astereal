@@ -40,9 +40,26 @@ class Router
             $pattern = self::compilePattern($route['uri']);
             if (preg_match($pattern, $requestPath, $matches)) {
                 // Execute route middleware pipeline
-                foreach ($route['middleware'] as $mwClass) {
-                    $mw = new $mwClass();
-                    $mw->handle($request);
+                foreach ($route['middleware'] as $mw) {
+                    if (is_object($mw) && method_exists($mw, 'handle')) {
+                        $mw->handle($request);
+                    } elseif (is_string($mw)) {
+                        if (str_contains($mw, ':')) {
+                            [$name, $arg] = explode(':', $mw, 2);
+                            if ($name === 'permission' && class_exists('Astereal\\Web\\Middleware\\PermissionMiddleware')) {
+                                (new \Astereal\Web\Middleware\PermissionMiddleware($arg))->handle($request);
+                                continue;
+                            }
+                            if ($name === 'role' && class_exists('Astereal\\Web\\Middleware\\RoleMiddleware')) {
+                                (new \Astereal\Web\Middleware\RoleMiddleware($arg))->handle($request);
+                                continue;
+                            }
+                        }
+                        if (class_exists($mw)) {
+                            $instance = new $mw();
+                            $instance->handle($request);
+                        }
+                    }
                 }
 
                 // Extract named URL parameters

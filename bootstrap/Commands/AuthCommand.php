@@ -72,17 +72,56 @@ class AuthCommand
             return;
         }
 
+        $this->ensureMustChangePasswordColumn($db);
+
         // Generate cryptographically secure random password
         $password = $this->generateSecurePassword();
         $hash     = password_hash($password, PASSWORD_BCRYPT);
 
         $stmt = $db->prepare("
-            INSERT INTO users (username, password, name, email, role)
-            VALUES ('admin', :password, 'Astereal Administrator', 'admin@astereal.local', 'admin')
+            INSERT INTO users (username, password, name, email, role, must_change_password)
+            VALUES ('admin', :password, 'Astereal Administrator', 'admin@astereal.local', 'superadmin', 1)
         ");
         $stmt->execute([':password' => $hash]);
+        $adminId = (int)$db->lastInsertId();
+        $this->ensureSuperadminRole($db, $adminId);
+        $this->syncPublishedDatabase($hash, 1);
 
         $this->displayCredentialsBanner('admin', $password, true);
+    }
+
+    /**
+     * Ensure must_change_password column exists on users table
+     */
+    protected function ensureMustChangePasswordColumn(PDO $db): void
+    {
+        try {
+            $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'sqlite') {
+                $cols = $db->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
+                $hasCol = false;
+                foreach ($cols as $col) {
+                    if (($col['name'] ?? '') === 'must_change_password') {
+                        $hasCol = true;
+                        break;
+                    }
+                }
+                if (!$hasCol) {
+                    $db->exec("ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) DEFAULT 0");
+                }
+            } else {
+                $stmt = $db->prepare("
+                    SELECT COUNT(*) FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'must_change_password'
+                ");
+                $stmt->execute();
+                if ((int)$stmt->fetchColumn() === 0) {
+                    $db->exec("ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) DEFAULT 0 AFTER status");
+                }
+            }
+        } catch (\Throwable $e) {
+            // Silently continue if table not yet migrated
+        }
     }
 
     /**
@@ -104,6 +143,26 @@ class AuthCommand
     }
 
     /**
+     * Ensure superadmin role is linked in user_roles pivot
+     */
+    protected function ensureSuperadminRole(PDO $db, int $userId): void
+    {
+        try {
+            $roleId = $db->query("SELECT id FROM roles WHERE slug = 'superadmin' LIMIT 1")->fetchColumn();
+            if ($roleId) {
+                $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
+                $sql = $driver === 'sqlite'
+                    ? "INSERT OR IGNORE INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)"
+                    : "INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)";
+                $stmt = $db->prepare($sql);
+                $stmt->execute([':user_id' => $userId, ':role_id' => (int)$roleId]);
+            }
+        } catch (\Throwable $e) {
+            // Silently continue if roles table is not yet created
+        }
+    }
+
+    /**
      * Reset admin password to a new random or specified password
      */
     protected function resetPassword(?string $customPassword = null): void
@@ -112,6 +171,8 @@ class AuthCommand
         if (!$db) {
             return;
         }
+
+        $this->ensureMustChangePasswordColumn($db);
 
         $password = $customPassword ?: $this->generateSecurePassword();
         $hash     = password_hash($password, PASSWORD_BCRYPT);
@@ -122,17 +183,72 @@ class AuthCommand
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existing) {
-            $update = $db->prepare("UPDATE users SET password = :password WHERE id = :id");
+            $update = $db->prepare("UPDATE users SET password = :password, role = 'superadmin', must_change_password = 1 WHERE id = :id");
             $update->execute([':password' => $hash, ':id' => $existing['id']]);
+            $this->ensureSuperadminRole($db, (int)$existing['id']);
         } else {
             $insert = $db->prepare("
-                INSERT INTO users (username, password, name, email, role)
-                VALUES ('admin', :password, 'Astereal Administrator', 'admin@astereal.local', 'admin')
+                INSERT INTO users (username, password, name, email, role, must_change_password)
+                VALUES ('admin', :password, 'Astereal Administrator', 'admin@astereal.local', 'superadmin', 1)
             ");
             $insert->execute([':password' => $hash]);
+            $adminId = (int)$db->lastInsertId();
+            $this->ensureSuperadminRole($db, $adminId);
         }
 
+        $this->syncPublishedDatabase($hash, 1);
+
         $this->displayCredentialsBanner('admin', $password, false);
+    }
+
+    /**
+     * Synchronize admin credentials to published web database if separate
+     */
+    protected function syncPublishedDatabase(string $passwordHash, int $mustChange = 1): void
+    {
+        try {
+            $pubConfigFile = $this->basePath . '/settings/publisher.php';
+            if (!file_exists($pubConfigFile)) {
+                return;
+            }
+            $config = require $pubConfigFile;
+            $webDest = $config['paths']['web'] ?? null;
+            if (!$webDest) {
+                return;
+            }
+
+            $publishedSqlite = rtrim($webDest, '/\\') . '/database/astereal.sqlite';
+            $localSqlite     = $this->basePath . '/web/database/astereal.sqlite';
+
+            $realPub   = file_exists($publishedSqlite) ? realpath($publishedSqlite) : null;
+            $realLocal = file_exists($localSqlite) ? realpath($localSqlite) : null;
+
+            if ($realPub && (!$realLocal || $realPub !== $realLocal)) {
+                $pubPdo = new PDO("sqlite:{$publishedSqlite}");
+                $pubPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                $this->ensureMustChangePasswordColumn($pubPdo);
+
+                $stmt = $pubPdo->prepare("SELECT id FROM users WHERE username = 'admin' LIMIT 1");
+                $stmt->execute();
+                $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($existing) {
+                    $update = $pubPdo->prepare("UPDATE users SET password = :password, role = 'superadmin', must_change_password = :must WHERE id = :id");
+                    $update->execute([':password' => $passwordHash, ':must' => $mustChange, ':id' => $existing['id']]);
+                } else {
+                    $insert = $pubPdo->prepare("
+                        INSERT INTO users (username, password, name, email, role, must_change_password)
+                        VALUES ('admin', :password, 'Astereal Administrator', 'admin@astereal.local', 'superadmin', :must)
+                    ");
+                    $insert->execute([':password' => $passwordHash, ':must' => $mustChange]);
+                }
+                @chmod($publishedSqlite, 0666);
+                echo "  \033[32m●\033[0m Synchronized admin credentials to published web database: {$publishedSqlite}\n";
+            }
+        } catch (\Throwable $e) {
+            // Silently continue if published database is not reachable
+        }
     }
 
     /**
@@ -234,10 +350,10 @@ class AuthCommand
         echo "  Password      : {$white}{$password}{$reset}\n\n";
 
         echo "{$cyan}───────────────────────────────────────────────────────────────{$reset}\n";
-        echo "  {$yellow}⚠️  SECURITY NOTICE:{$reset}\n";
-        echo "  Please copy and securely store this password.\n";
-        echo "  It is encrypted in the database and only displayed once.\n";
-        echo "  You can regenerate it anytime with: {$cyan}php aster auth:reset{$reset}\n";
+        echo "  {$yellow}⚠️  INITIAL LOGIN FLOW:{$reset}\n";
+        echo "  This is a temporary administrative password.\n";
+        echo "  Upon logging in, you will be prompted immediately to set\n";
+        echo "  your permanent password before accessing the console.\n";
         echo "{$cyan}═══════════════════════════════════════════════════════════════{$reset}\n\n";
     }
 

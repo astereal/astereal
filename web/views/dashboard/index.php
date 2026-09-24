@@ -1,9 +1,21 @@
 <?php
-$title = "Astereal Core - Telephony & API Dashboard";
+$title = (getenv('APP_NAME') ?: 'Astereal') . " Core - Telephony & API Dashboard";
 require dirname(__DIR__) . '/layouts/header.php';
 ?>
 
 <div x-data="dashboardApp()" class="space-y-8">
+    <?php if (isset($_GET['welcome'])): ?>
+        <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center justify-between shadow-lg">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="font-semibold">Permanent administrator password configured successfully. Welcome to Astereal!</span>
+            </div>
+            <a href="/" class="text-xs text-emerald-400 hover:text-emerald-200 underline font-mono">Dismiss</a>
+        </div>
+    <?php endif; ?>
+
     <!-- Top Telemetry & Health Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <!-- Asterisk Engine Card -->

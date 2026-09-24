@@ -61,6 +61,7 @@ ASTEREAL/
 │
 ├── web/                      # Developer Console & Web Tier (Native PHP)
 │   ├── app/                  # Controllers, Models, Middleware, Support
+│   ├── database/             # SQLite database & migrations/
 │   ├── public/               # Web document root (index.php & assets)
 │   ├── routes/               # Web & API route definitions
 │   └── views/                # Cosmic-themed views & layouts
@@ -76,7 +77,7 @@ ASTEREAL/
 
 ## Astereal CLI (`php aster`)
 
-Astereal includes the `aster` CLI tool to manage telephony services, security, and deployment:
+Astereal includes the `aster` CLI tool to manage telephony services, security, migrations, and deployment:
 
 ```bash
 Astereal CLI
@@ -87,8 +88,9 @@ Available commands:
   auth      Manage web authentication & admin credentials (setup, reset, create, credentials)
   core      Manage Asterisk core service (status, start, stop, restart)
   dialplan  Manage dialplan routines and reloads
+  migrate   Database migrations (run, status, rollback, fresh)
   pjsip     Manage PJSIP endpoints and module reloads
-  publish   Publish application files to system paths (/etc/asterisk, /var/lib/asterisk/agi-bin, etc.)
+  publish   Publish application files to system paths (/etc/asterisk, /var/lib/asterisk/agi-bin, /var/www/html, etc.)
   quote     Display an inspirational quote
 
 Use 'php aster [command]:help' for details.
@@ -98,7 +100,7 @@ Use 'php aster [command]:help' for details.
 
 ## Deploying Your Application
 
-Publish your telephony dialplans, AGI scripts, SIP configurations, and web definitions to Asterisk system paths in one command:
+Publish your telephony dialplans, AGI scripts, SIP configurations, and web definitions to system paths in one command:
 
 ```bash
 php aster publish
@@ -109,7 +111,8 @@ This will automatically:
 2. Sync `app/dialplan/` and `app/sip/` to `/etc/asterisk/`
 3. Sync `app/sounds/` to `/var/lib/asterisk/sounds/`
 4. Sync `app/httpd/` to `/etc/httpd/conf.d/`
-5. Trigger seamless Asterisk dialplan and PJSIP reloads.
+5. Sync `web/` to `/var/www/html/<app-name>`
+6. Trigger seamless Asterisk dialplan and PJSIP reloads.
 
 ---
 
