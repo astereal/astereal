@@ -5,3 +5,4 @@ logs/
 .env
 app/sip/pjsip.conf
 scratch/
+docs/next-task.md

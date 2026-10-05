@@ -77,7 +77,9 @@ ASTEREAL/
 
 ## Astereal CLI (`php aster`)
 
-Astereal includes the `aster` CLI tool to manage telephony services, security, migrations, and deployment:
+Astereal includes the `aster` CLI tool (and `artisan` alias) to manage telephony services, security, migrations, scaffolding, and deployment.
+
+> 📖 **Full Documentation**: For a comprehensive guide and syntax reference for all CLI commands, see [COMMANDS.md](COMMANDS.md).
 
 ```bash
 Astereal CLI
@@ -87,7 +89,9 @@ Usage:
 Available commands:
   auth      Manage web authentication & admin credentials (setup, reset, create, credentials)
   core      Manage Asterisk core service (status, start, stop, restart)
+  create    Scaffold telephony components, configs, migrations, models, controllers, and middleware
   dialplan  Manage dialplan routines and reloads
+  make      Alias for create command to scaffold components
   migrate   Database migrations (run, status, rollback, fresh)
   pjsip     Manage PJSIP endpoints and module reloads
   publish   Publish application files to system paths (/etc/asterisk, /var/lib/asterisk/agi-bin, /var/www/html, etc.)
@@ -95,6 +99,8 @@ Available commands:
 
 Use 'php aster [command]:help' for details.
 ```
+
+👉 **Read the full [CLI Commands Reference Guide](COMMANDS.md)** for detailed options, templates, and usage examples.
 
 ---
 
